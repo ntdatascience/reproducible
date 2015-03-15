@@ -12,7 +12,7 @@ Load data from url, unzip, translate data into R date object, and prepare for we
 ```{r}
 library(plyr)
 library(downloader)
-
+knitr::opts_chunk$set(fig.path=NA)
 downloader::download("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",
              "activity.zip", 
              mode = "wb")  

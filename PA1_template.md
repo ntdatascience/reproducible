@@ -13,13 +13,7 @@ Load data from url, unzip, translate data into R date object, and prepare for we
 ```r
 library(plyr)
 library(downloader)
-```
-
-```
-## Warning: package 'downloader' was built under R version 3.1.2
-```
-
-```r
+knitr::opts_chunk$set(fig.path=NA)
 downloader::download("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",
              "activity.zip", 
              mode = "wb")  
@@ -40,7 +34,7 @@ dsummary.steps <- tapply(activity.cleaned.df$steps, activity.cleaned.df$date, su
 hist(dsummary.steps, main="Total Steps By Day")
 ```
 
-![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png) 
+![plot of chunk unnamed-chunk-2](unnamed-chunk-2-1.png) 
 
 Calculation | Total Daily Steps
 ------------ | -----
@@ -58,7 +52,7 @@ plot( y = daily.df$steps, x = daily.df$interval, type = "l",
      main = "Daily Activity Pattern")
 ```
 
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png) 
+![plot of chunk unnamed-chunk-3](unnamed-chunk-3-1.png) 
 
 ```r
 str(daily.df)
@@ -108,7 +102,7 @@ daily.combined.df$group <- as.factor(daily.combined.df$group)
 ggplot(data=daily.combined.df, aes(x=interval, y=steps, group=group, colour=group)) + geom_line()
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
+![plot of chunk unnamed-chunk-5](unnamed-chunk-5-1.png) 
 
 
 ###  Are there differences in activity patterns between weekdays and weekends?
