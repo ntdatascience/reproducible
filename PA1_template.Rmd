@@ -7,7 +7,7 @@ This Programming Assignment 1 is described at: [coursera Reproducible Research P
 
 ### Loading and preprocessing the data
 
-Load data from url, unzip, translate data into R date object, and prepare for weekday/weekend comparisons.
+Load data from url, unzip, translate data into R date object, and prepare for weekday/weekend comparisons.  Also adding attributes so that data can be analyzed by day of week and weekday/weekend.  First, approach for getting a clean data set is to ignore records that are missing step readings.
   
 ```{r}
 library(plyr)
@@ -19,7 +19,17 @@ downloader::download("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Fact
 unzip("activity.zip", "activity.csv")
 activity.df <- read.csv( "activity.csv", na.strings = "NA")
 activity.df$date <- as.Date(activity.df$date, "%Y-%m-%d")
+#
+# Let's add day of week information that will be valuable later
+activity.df$day.of.week <- format(activity.df$date, "%a")
+activity.df$day.type <- activity.df$day.of.week
+activity.df$day.type[which(activity.df$day.type %in% c("Sat","Sun"))] <- "Weekend"
+activity.df$day.type[which(activity.df$day.type %in% c("Mon","Tue","Wed","Thu","Fri"))] <- "Weekday"
+activity.df$day.type <- as.factor(activity.df$day.type)
+#
+# Initial approach is the get rid of records that are missing step information
 activity.cleaned.df <-activity.df[which(!is.na(activity.df$steps)),]
+head(activity.df)
 ```
 
 ###  What is mean total number of steps taken per day?
@@ -27,9 +37,13 @@ activity.cleaned.df <-activity.df[which(!is.na(activity.df$steps)),]
 Histogram number of total steps per day
 
 ```{r}
-dsummary.steps <- tapply(activity.cleaned.df$steps, activity.cleaned.df$date, sum, na.rm = TRUE)
+dsummary.steps <- tapply(activity.cleaned.df$steps, 
+                         activity.cleaned.df$date, 
+                         sum, na.rm = TRUE)
 
 hist(dsummary.steps, main="Total Steps By Day")
+
+library(ggplot2)
 ```
 
 Calculation | Total Daily Steps
@@ -81,32 +95,55 @@ daily.df$group <- "removed-missing-data"
 
 daily.combined.df <- rbind( daily.est.df, daily.df)
 daily.combined.df$group <- as.factor(daily.combined.df$group)
+```
 
+### Histogram using Estimate Strategy
+First, let's display histogram as requested as part of this assignment
+```{r}
+dsummary.steps <- tapply(activity.cleaned.df$step, activity.cleaned.df$date, sum, na.rm = TRUE)
+
+hist(dsummary.steps, main="Total Steps By Day")
+```
+
+#### Supplemental information
+For informational purposes consider this overlay of result data showing i) removal of missing values with ii) using the mean per day estimate strategy.
+
+```{r}
 ggplot(data=daily.combined.df, aes(x=interval, y=steps, group=group, colour=group)) + geom_line()
 ```
 
 
 ###  Are there differences in activity patterns between weekdays and weekends?
 
-```{r}
-activity.est.df$day.of.week <- format(activity.est.df$date, "%a")
-dow.est.df <- ddply(activity.est.df, "day.of.week", summarise, daily.sum=sum(steps))
-dow.est.df$day.type <- dow.est.df$day.of.week
-dow.est.df$day.type[which(dow.est.df$day.type %in% c("Sat","Sun"))] <- "Weekend"
-dow.est.df$day.type[which(dow.est.df$day.type %in% c("Mon","Tue","Wed","Thu","Fri"))] <- "Weekday"
-dow.est.df$day.type <- as.factor(dow.est.df$day.type)
-dow.est.df 
-weekend.est.df <- ddply(dow.est.df, "day.type", summarise, mean.steps=mean(daily.sum))
+For this step let's return to using the original data set and removing records that are missing data. 
 
-formatted.mean.weekdays <- sprintf("%.2f",weekend.est.df[weekend.est.df$day.type=="Weekday","mean.steps"])
-formatted.mean.weekends <- sprintf("%.2f",weekend.est.df[weekend.est.df$day.type=="Weekend","mean.steps"])
+```{r}
+dow.df <- ddply(activity.df, "day.of.week", summarise, daily.sum=sum(steps))
+summary(dow.df) 
+dow.df$day.type <- dow.df$day.of.week
+dow.df$day.type[which(dow.df$day.type %in% c("Sat","Sun"))] <- "Weekend"
+dow.df$day.type[which(dow.df$day.type %in% c("Mon","Tue","Wed","Thu","Fri"))] <- "Weekday"
+dow.df$day.type <- as.factor(dow.df$day.type)
 ```
 
+### Panel Plot on 5 min intervals comparing weekday to weekend data
+```{r}
+versus.df <- ddply(activity.cleaned.df, c("interval", "day.type"), summarise, steps=mean(steps))
+#head(versus.df)
+library(lattice)
+xyplot(steps~interval | factor(day.type), data=versus.df, pch=19,
+                main="Weekday vs Weekend", xlab="Interval",  ylab="Avg Steps",layout=c(2,1),type=c("l","g"))
+```
+
+#### High level summary of weekday versus weekend
 Summary information on steps on weekdays versus weekends.
 
-* Uses data with filled in missing interval data (filled in with interval mean for that day)
-* Determines sum of steps across days of the week
-* Determines mean of weekday versus weekend activity
+```{r}
+summary.df <- ddply(versus.df, "day.type", summarise, steps=sum(steps))
+formatted.mean.weekdays <- sprintf("%.2f",summary.df[summary.df$day.type=="Weekday","steps"])
+formatted.mean.weekends <- sprintf("%.2f",summary.df[summary.df$day.type=="Weekend","steps"])
+```
+* Determine mean of weekday versus weekend activity
 
  . | Mean Daily Steps
 ------------ | -----
